@@ -12,7 +12,7 @@
 
 ## Introduction
 
-Show Time is a web backend application, providing APIs to manage tickets to shows and musicals. It is built using [Scala 2.13](https://www.scala-lang.org), [ZIO](https://zio.dev) and [http4s](https://http4s.org/).
+Show Time is a web backend application, providing APIs to manage tickets to shows and musicals. It is built using [Scala 2.13](https://www.scala-lang.org), [ZIO](https://zio.dev) and [ZIO HTTP](https://dream11.github.io/zio-http/).
 
 ## Configuration
 
