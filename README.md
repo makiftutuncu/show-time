@@ -18,7 +18,16 @@ Show Time is a web backend application, providing APIs to manage tickets to show
 
 Application can be configured via [application.conf](src/main/resources/application.conf). You can also override config values with following environment variables.
 
-TODO
+| Variable Name         | Data Type | Description                                                              | Required               |
+|-----------------------|-----------|--------------------------------------------------------------------------|------------------------|
+| PORT                  | Int       | Running port of the application                                          | No, defaults to `8080` |
+| SHOW_DURATION_IN_DAYS | Int       | How many days do shows run                                               | No, defaults to `100`  |
+| MUSICAL_PRICE         | Int       | Ticket price for musicals                                                | No, defaults to `70`   |
+| COMEDY_PRICE          | Int       | Ticket price for comedies                                                | No, defaults to `50`   |
+| DRAMA_PRICE           | Int       | Ticket price for dramas                                                  | No, defaults to `40`   |
+| DISCOUNT_AFTER_DAYS   | Int       | After how many days of a show's opening day should a discount be applied | No, defaults to `80`   |
+| DISCOUNT_PERCENTAGE   | Int       | Discount percentage to apply                                             | No, defaults to `20`   |
+| THEATER_SIZE          | Int       | How many seats are there in the theater                                  | No, defaults to `100`  |
 
 For log configuration, see [logback.xml](src/main/resources/logback.xml).
 
@@ -44,19 +53,33 @@ sbt 'testOnly fullyQualifiedTestClassName1 fullyQualifiedTestClassName2 ...'
 
 ## Docker
 
-You may also run the application in a Docker container. Environment variables mentioned in [Configuration](#configuration) are passed to the container while building image so you don't have to pass them with `-e` while creating the container with `docker run`.
+There is a [`run.sh`](run.sh) script included to build and run the application in Docker. So you can just run
+
+```bash
+./run.sh
+```
+
+If you want to do it manually, you may use included [`docker-compose.yml`](docker-compose.yml).
 
 First build an image locally with
 
 ```bash
-sbt 'Docker / publishLocal'
+sbt clean 'Docker / publishLocal'
 ```
 
-Then start a container from generated Docker image with
+Then start the application with
 
 ```bash
-docker run --rm show-time:latest
+docker-compose up
 ```
+
+Environment variables mentioned in [Configuration](#configuration) are passed to the container except for `PORT`. `PORT` variable only affects the port on host machine while running the application in Docker. The application in the container will still run on its default port which will be mapped to given `PORT` on the host machine. For example, if you run
+
+```bash
+PORT=9000 ./run.sh
+```
+
+then the port `9000` on the host machine will be mapped to the port `8080` in the container which is the application's default port.
 
 ## API Documentation
 

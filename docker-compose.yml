@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  show-time:
+    container_name: show-time
+    image: show-time:latest
+    ports:
+      - "${PORT:-8080}:8080"
+    networks:
+      - show-time-network
+
+networks:
+  show-time-network:
+    driver: bridge
