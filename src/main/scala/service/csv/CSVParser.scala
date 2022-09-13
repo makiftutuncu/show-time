@@ -11,7 +11,11 @@ object CSVParser {
   sealed abstract class Error(val message: String)
 
   object Error {
-    final case class CannotProcessResource(name: String, error: Throwable) extends Error(s"Cannot process CSV resource '$name': $error")
+    final case class CannotProcessResource(name: String, error: String) extends Error(s"Cannot process CSV resource '$name': $error")
+
+    object CannotProcessResource {
+      def apply(name: String, error: Throwable): CannotProcessResource = CannotProcessResource(name, error.toString)
+    }
 
     final case class CannotParse(error: String) extends Error(s"Cannot parse CSV: $error")
 

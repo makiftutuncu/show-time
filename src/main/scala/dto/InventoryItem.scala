@@ -2,6 +2,7 @@ package dev.akif.showtime
 package dto
 
 import model.Genre
+
 import zio.json.{DeriveJsonCodec, JsonCodec}
 
 final case class InventoryItem(genre: Genre, shows: List[ShowAvailability])

@@ -4,8 +4,8 @@ import service.InventoryService
 import service.InventoryService.Error
 
 import zhttp.http.*
-import zio.json.*
 import zio.ZIO
+import zio.json.*
 
 import java.time.LocalDate
 

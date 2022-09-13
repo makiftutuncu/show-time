@@ -1,11 +1,11 @@
 package dev.akif.showtime
 package service
 
+import config.Config
 import dto.InventoryResponse
 import repository.ShowRepository
 import service.csv.CSVParser
 
-import config.Config
 import zio.{IO, URLayer, ZLayer}
 
 import java.time.LocalDate

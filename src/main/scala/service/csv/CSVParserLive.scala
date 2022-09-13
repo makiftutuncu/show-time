@@ -1,18 +1,22 @@
 package dev.akif.showtime
 package service.csv
 
-import zio.{IO, ZIO}
+import zio.{IO, UIO, ZIO}
 
+import java.io.IOException
 import scala.io.{BufferedSource, Source}
 
 object CSVParserLive extends CSVParser {
   override def parse(name: String): IO[CSVParser.Error, ParsedCSV] = {
-    val acquire =
-      ZIO.attemptBlockingIO {
-        Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(name))
-      }
+    val acquire: IO[IOException, BufferedSource] =
+      Option(getClass.getClassLoader.getResourceAsStream(name))
+        .fold[IO[IOException, BufferedSource]](ZIO.fail(new IOException("File is not found"))) { stream =>
+          ZIO.attemptBlockingIO {
+            Source.fromInputStream(stream)
+          }
+        }
 
-    val release = { (source: BufferedSource) =>
+    val release: BufferedSource => UIO[Unit] = { (source: BufferedSource) =>
       ZIO.attemptBlockingIO(source.close()).orDie
     }
 
@@ -26,7 +30,7 @@ object CSVParserLive extends CSVParser {
           source
             .getLines()
             .zipWithIndex
-            .foldLeft[IO[CSVParser.Error, List[Array[String]]]](ZIO.succeed(List.empty)) { case (result, (line, index)) =>
+            .foldLeft[IO[CSVParser.Error, List[List[String]]]](ZIO.succeed(List.empty)) { case (result, (line, index)) =>
               result.flatMap { rows =>
                 parseLine(index + 1, line).flatMap { row =>
                   ZIO.logTrace(s"Parsed row '${row.mkString("[", ",", "]")}'").as(rows :+ row)
@@ -38,10 +42,10 @@ object CSVParserLive extends CSVParser {
     }
   }
 
-  def parseLine(lineNumber: Int, line: String): IO[CSVParser.Error, Array[String]] = {
+  def parseLine(lineNumber: Int, line: String): IO[CSVParser.Error, List[String]] = {
     val firstQuote = line.indexOf('"')
-    if (firstQuote == -1) {
-      ZIO.succeed(line.split(","))
+    val result = if (firstQuote == -1) {
+      ZIO.succeed(line.split(",").toList)
     } else {
       val secondQuote = line.indexOf('"', firstQuote + 1)
 
@@ -54,8 +58,9 @@ object CSVParserLive extends CSVParser {
 
         val parts = (beforeQuote :+ betweenQuotes) ::: afterQuote
 
-        ZIO.succeed(parts.map(_.trim).filter(_.nonEmpty).toArray)
+        ZIO.succeed(parts)
       }
     }
+    result.map(_.map(_.trim).filter(_.nonEmpty))
   }
 }

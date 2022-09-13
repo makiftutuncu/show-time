@@ -1,13 +1,13 @@
 package dev.akif.showtime
 package service
 
+import config.Config
 import dto.{InventoryItem, InventoryResponse, ShowAvailability}
 import model.{Genre, Show}
 import repository.ShowRepository
 import service.InventoryService.csvResourceName
 import service.csv.CSVParser
 
-import config.Config
 import zio.{IO, ZIO}
 
 import java.time.LocalDate
@@ -24,7 +24,7 @@ final case class InventoryServiceLive(csvParser: CSVParser, showRepository: Show
           csv.to[Show] { columns =>
             for {
               name  <- Right(columns(0))
-              date  <- Try(LocalDate.parse(columns(1))).fold(e => Left(s"Cannot parse date for show $name: $e"), Right.apply)
+              date  <- Try(LocalDate.parse(columns(1))).fold(e => Left(s"Cannot parse date for show '$name': $e"), Right.apply)
               genre <- Genre.from(columns(2).toLowerCase)
             } yield {
               Show(name, date, genre)
@@ -33,16 +33,16 @@ final case class InventoryServiceLive(csvParser: CSVParser, showRepository: Show
         }
         .foldZIO(
           error => {
-            val message = "Cannot import CSV"
-            ZIO.logError(s"$message: ${error.message}") *> ZIO.fail(InventoryService.Error.CannotImportCSV(message))
+            val message = s"Cannot import CSV: ${error.message}"
+            ZIO.logError(message) *> ZIO.fail(InventoryService.Error.CannotImportCSV(message))
           },
           shows =>
             showRepository
               .saveAll(shows)
               .zipLeft(ZIO.logInfo(s"Imported ${shows.size} shows from CSV"))
               .flatMapError { error =>
-                val message = "Cannot save imported shows"
-                ZIO.logError(s"$message: $error").as(InventoryService.Error.CannotImportCSV(message))
+                val message = s"Cannot save imported shows: ${error.message}"
+                ZIO.logError(message).as(InventoryService.Error.CannotImportCSV(message))
               }
         )
     } yield ()
@@ -53,10 +53,10 @@ final case class InventoryServiceLive(csvParser: CSVParser, showRepository: Show
       _ <- ZIO.logInfo(s"Finding show availabilities for date '$date'")
 
       findShows = showRepository
-        .findByOpeningDayAndDuration(date, config.show.durationInDays)
+        .findByDateAndDuration(date, config.show.durationInDays.toLong)
         .flatMapError { error =>
-          val message = s"Cannot find show availabilities for date '$date'"
-          ZIO.logError(s"$message: $error").as(InventoryService.Error.CannotFindAvailabilities(message))
+          val message = s"Cannot find show availabilities for date '$date': ${error.message}"
+          ZIO.logError(message).as(InventoryService.Error.CannotFindAvailabilities(message))
         }
 
       inventoryResponse <- findShows
@@ -107,7 +107,7 @@ final case class InventoryServiceLive(csvParser: CSVParser, showRepository: Show
   def priceFor(show: Show, date: LocalDate): IO[InventoryService.Error, Int] =
     show.price(date, config.show) match {
       case None =>
-        val message = s"Price of genre '${show.genre}' is not configured"
+        val message = s"Cannot get price of show '$show' for date '$date'"
         ZIO.logError(message) *> ZIO.fail(InventoryService.Error.CannotFindAvailabilities(message))
 
       case Some(price) =>

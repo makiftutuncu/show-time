@@ -3,8 +3,8 @@ package service.csv
 
 import zio.{IO, ZIO}
 
-final case class ParsedCSV(rows: List[Array[String]]) {
-  def to[A](decoder: Array[String] => Either[String, A]): IO[CSVParser.Error, List[A]] =
+final case class ParsedCSV(rows: List[List[String]]) {
+  def to[A](decoder: List[String] => Either[String, A]): IO[CSVParser.Error, List[A]] =
     ZIO.foreachPar(rows) { row =>
       decoder(row) match {
         case Left(error) => ZIO.fail(CSVParser.Error.CannotParse(error))
