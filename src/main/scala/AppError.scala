@@ -1,14 +1,14 @@
 package dev.akif.showtime
 
-import scala.util.control.NoStackTrace
-
-sealed trait AppError extends RuntimeException with NoStackTrace {
+sealed trait AppError {
   val message: String
-
-  override def getMessage: String = message
 }
 
 object AppError {
+  final case class InvalidBody(`type`: String, value: String, why: String) extends AppError {
+    override val message: String = s"Body cannot be read as type '${`type`}' for value '$value': $why"
+  }
+
   final case class InvalidParameter(name: String, value: String, why: String) extends AppError {
     override val message: String = s"Parameter '$name' with value '$value' is invalid: $why"
   }

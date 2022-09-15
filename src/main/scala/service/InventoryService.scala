@@ -3,7 +3,7 @@ package service
 
 import config.Config
 import dto.InventoryResponse
-import repository.ShowRepository
+import repository.{OrderRepository, ShowRepository}
 import service.csv.CSVParser
 
 import zio.{IO, URLayer, ZLayer}
@@ -14,6 +14,8 @@ trait InventoryService {
   def importCSV: IO[InventoryService.Error, Unit]
 
   def findAvailabilitiesFor(date: LocalDate): IO[InventoryService.Error, InventoryResponse]
+
+  def placeOrder(title: String, performanceDate: LocalDate, tickets: Int): IO[InventoryService.Error, Int]
 }
 
 object InventoryService {
@@ -22,12 +24,14 @@ object InventoryService {
   }
 
   object Error {
-    final case class CannotImportCSV(message: String)          extends Error
-    final case class CannotFindAvailabilities(message: String) extends Error
+    final case class CannotImportCSV(message: String)       extends Error
+    final case class CannotGetAvailability(message: String) extends Error
+    final case class CannotGetPrice(message: String)        extends Error
+    final case class CannotPlaceOrder(message: String)      extends Error
   }
 
   val csvResourceName: String = "data.csv"
 
-  val live: URLayer[CSVParser & ShowRepository & Config, InventoryService] =
+  val live: URLayer[CSVParser & ShowRepository & OrderRepository & Config, InventoryService] =
     ZLayer.fromFunction(InventoryServiceLive.apply _)
 }

@@ -1,36 +1,54 @@
 package dev.akif.showtime
 
+import dto.OrderResponse.Failure.orderResponseFailureCodec
+import dto.{OrderRequest, OrderResponse}
 import service.InventoryService
-import service.InventoryService.Error
+import utility.AppUtilities
 
 import zhttp.http.*
 import zio.ZIO
-import zio.json.*
 
 import java.time.LocalDate
 
-object InventoryApp {
+object InventoryApp extends AppUtilities {
   type Environment = InventoryService
 
-  val handleInventoryServiceError: InventoryService.Error => AppError = {
-    case Error.CannotImportCSV(message)          => AppError.InternalError(message)
-    case Error.CannotFindAvailabilities(message) => AppError.InternalError(message)
-  }
-
   val app: HttpApp[Environment, AppError] =
-    Http.collectZIO[Request] { case Method.GET -> Path.root / "inventory" / dateString =>
-      findAvailabilitiesFor(dateString)
+    Http.collectZIO[Request] {
+      case request @ Method.POST -> Path.root / "inventory" / "order" =>
+        placeOrder(request)
+
+      case Method.GET -> Path.root / "inventory" / dateString =>
+        findAvailabilitiesFor(dateString)
+    }
+
+  def placeOrder(request: Request): ZIO[Environment, AppError, Response] =
+    for {
+      order <- bodyAs[OrderRequest](request)
+
+      response <- ZIO
+        .serviceWithZIO[InventoryService](_.placeOrder(order.show, order.performanceDate, order.tickets))
+        .foldZIO(
+          {
+            case InventoryService.Error.CannotPlaceOrder(message) =>
+              ZIO.succeed(jsonResponse(OrderResponse.failure(order, message), Status.BadRequest))
+
+            case error =>
+              ZIO.fail(AppError.InternalError(error.message))
+          },
+          ticketsAvailable => ZIO.succeed(jsonResponse(OrderResponse.success(order, ticketsAvailable)))
+        )
+    } yield {
+      response
     }
 
   def findAvailabilitiesFor(dateString: String): ZIO[Environment, AppError, Response] =
     for {
-      date <- ZIO
-        .attempt(LocalDate.parse(dateString))
-        .mapError(e => AppError.InvalidParameter("date", dateString, e.toString))
+      date <- pathParameterAs[LocalDate](dateString, "date", LocalDate.parse)
 
       response <- ZIO
-        .serviceWithZIO[Environment](_.findAvailabilitiesFor(date))
-        .mapBoth(handleInventoryServiceError, inventoryResponse => Response.json(inventoryResponse.toJson))
+        .serviceWithZIO[InventoryService](_.findAvailabilitiesFor(date))
+        .mapBoth(error => AppError.InternalError(error.message), inventoryResponse => jsonResponse(inventoryResponse))
     } yield {
       response
     }

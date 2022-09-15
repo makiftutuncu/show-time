@@ -6,11 +6,11 @@ import model.Genre
 import zio.config.*
 import zio.config.ConfigDescriptor.*
 
-final case class Show(durationInDays: Int, pricesByGenre: Map[Genre, Int], discount: Discount)
+final case class Show(durationInDays: Long, pricesByGenre: Map[Genre, Int], discount: Discount)
 
 object Show {
-  val durationInDays: ConfigDescriptor[Int] =
-    int("duration-in-days").describe("How many days do shows run")
+  val durationInDays: ConfigDescriptor[Long] =
+    long("duration-in-days").describe("How many days do shows run")
 
   val pricesByGenre: ConfigDescriptor[Map[Genre, Int]] =
     nested("prices-by-genre")(mapDescriptor[Genre, Int](Genre.from, _.name, int).describe("Ticket prices by show genre"))

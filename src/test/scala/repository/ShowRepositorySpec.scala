@@ -13,8 +13,29 @@ object ShowRepositorySpec extends ZIOSpecDefault with TestLayers {
   val show2: Show = Show("Test Show 2", LocalDate.of(2022, 9, 1), Genre.Musical)
   val show3: Show = Show("Test Show 3", LocalDate.of(2022, 9, 26), Genre.Drama)
 
-  val findByOpeningDayAndDurationSuite: Spec[Any, Any] =
-    suite("finding shows by opening dat and duration")(
+  val findByTitleDateAndDurationSuite: Spec[Any, Any] =
+    suite("finding shows by title, date and duration")(
+      test("fails when there are no shows with given name") {
+        ZIO
+          .serviceWithZIO[ShowRepository](_.findByTitleDateAndDuration("Test Show 4", LocalDate.of(2022, 9, 19), 7))
+          .either
+          .map(result => assertTrue(result == Left(ShowRepository.Error.ShowNotFound("Test Show 4", LocalDate.of(2022, 9, 19)))))
+      },
+      test("fails when there are no shows playing for given date") {
+        ZIO
+          .serviceWithZIO[ShowRepository](_.findByTitleDateAndDuration("Test Show 1", LocalDate.of(2022, 9, 19), 7))
+          .either
+          .map(result => assertTrue(result == Left(ShowRepository.Error.ShowNotFound("Test Show 1", LocalDate.of(2022, 9, 19)))))
+      },
+      test("returns the show") {
+        ZIO
+          .serviceWithZIO[ShowRepository](_.findByTitleDateAndDuration("Test Show 1", LocalDate.of(2022, 9, 13), 14))
+          .map(show => assertTrue(show == show1))
+      }
+    ).provide(inMemoryShowRepository(show1, show2, show3))
+
+  val findByDateAndDurationSuite: Spec[Any, Any] =
+    suite("finding shows by date and duration")(
       test("returns empty list when there are no shows in the repository") {
         ZIO
           .serviceWithZIO[ShowRepository](_.findByDateAndDuration(LocalDate.of(2022, 10, 1), 7))
@@ -50,5 +71,5 @@ object ShowRepositorySpec extends ZIOSpecDefault with TestLayers {
     }
 
   override def spec: Spec[TestEnvironment & Scope, Any] =
-    suite("ShowRepositorySpec")(findByOpeningDayAndDurationSuite, saveAllSpec)
+    suite("ShowRepositorySpec")(findByTitleDateAndDurationSuite, findByDateAndDurationSuite, saveAllSpec)
 }

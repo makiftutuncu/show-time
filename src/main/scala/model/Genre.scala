@@ -3,7 +3,9 @@ package model
 
 import zio.json.JsonCodec
 
-sealed abstract class Genre(val name: String)
+sealed abstract class Genre(val name: String) {
+  override def toString: String = name
+}
 
 object Genre {
   implicit val genreCodec: JsonCodec[Genre] = JsonCodec.string.transformOrFail(from, _.name)
