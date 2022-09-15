@@ -83,7 +83,133 @@ then the port `9000` on the host machine will be mapped to the port `8080` in th
 
 ## API Documentation
 
-TODO
+Here is an overview of the APIs:
+
+| Method | URL               | Link                          |
+|--------|-------------------|-------------------------------|
+| GET    | /inventory/{date} | [Jump](#get-inventorydate)    |
+| POST   | /inventory/order  | [Jump](#post-inventory-order) |
+
+Errors return a human-readable message as plain text with a non-OK HTTP status code.
+
+All successful responses will have `200 OK` status unless explicitly mentioned.
+
+---
+
+### GET /inventory/{date}
+
+This endpoint can be used to list the availabilities of shows for given `date`. Shows are grouped by their genre and sorted by
+
+* `tickets_avaliable` in ascending order, except for sold-out tickets which would be at the end of the list
+* `price` in ascending order
+* `title` in ascending order
+
+#### Parameters
+
+| Parameter | Data Type | Description                                                     | Required | Example    |
+|-----------|-----------|-----------------------------------------------------------------|----------|------------|
+| date      | LocalDate | ISO formatted date for which show availabilities will be listed | Yes      | 2022-09-15 |
+
+#### Example Successful Response
+
+```json
+{
+  "inventory": [
+    {
+      "genre": "drama",
+      "shows": [
+        {
+          "price": 40,
+          "tickets_available": 100,
+          "title": "EVENING AT THE TALK HOUSE"
+        },
+        {
+          "price": 40,
+          "tickets_available": 100,
+          "title": "FATHER, THE"
+        },
+        {
+          "price": 40,
+          "tickets_available": 100,
+          "title": "LORD OF THE FLIES, THE"
+        },
+        {
+          "price": 40,
+          "tickets_available": 100,
+          "title": "RICHARD II"
+        },
+        {
+          "price": 40,
+          "tickets_available": 100,
+          "title": "THREE DAYS IN THE COUNTRY"
+        }
+      ]
+    },
+    {
+      "genre": "musical",
+      "shows": [
+        {
+          "price": 70,
+          "tickets_available": 100,
+          "title": "BEAUTIFUL - THE CAROLE KING MUSICAL"
+        },
+        {
+          "price": 70,
+          "tickets_available": 100,
+          "title": "COMMITMENTS, THE"
+        },
+        {
+          "price": 70,
+          "tickets_available": 100,
+          "title": "GYPSY"
+        },
+        {
+          "price": 70,
+          "tickets_available": 100,
+          "title": "SINATRA AT THE LONDON PALLADIUM"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST /inventory/order
+
+This endpoint can be used to place an order for a show on a date for given number of tickets. It returns a summary of the operation, including remaining available tickets if the order was successful.
+
+#### Request Payload
+
+```json
+{
+  "show": "EVENING AT THE TALK HOUSE",
+  "performance_date": "2022-09-15",
+  "tickets": 1
+}
+```
+
+#### Example Successful Response
+
+```json
+{
+    "performance_date": "2022-10-13",
+    "show": "1984",
+    "status": "success",
+    "tickets_available": 12,
+    "tickets_bought": 2
+}
+```
+
+#### Example Failed Response
+
+```json
+{
+    "message": "Cannot place order for show '1984' on date '2022-10-13', 5 tickets requested but the show has 2 tickets left",
+    "performance_date": "2022-10-13",
+    "show": "1984",
+    "status": "failure"
+}
+```
 
 ## Contributing
 
